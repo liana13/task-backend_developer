@@ -19,7 +19,7 @@ abstract class BaseTransaction
     public const USER_TYPE_PRIVATE = 'private';
 
     /** @const string USER__TYPE_BUSINESS */
-    public const USER__TYPE_BUSINESS = 'business';
+    public const USER_TYPE_BUSINESS = 'business';
 
     /** @var string $currency */
     protected string $currency;
@@ -36,19 +36,62 @@ abstract class BaseTransaction
     /** @var string $date */
     protected string $date;
 
+    /** @var array $weeklyWithdraws */
+    protected array $weeklyWithdraws;
+
+    /**
+     * round number to up
+     */
+    public function roundUp($value, $precision = 2) : float
+    {
+        $pow = pow (10, $precision);
+        return ( ceil($pow * $value) + ceil ($pow * $value - ceil ($pow * $value)) ) / $pow;
+    }
+
+    /**
+     * get exchange rates
+     */
+    public function exchangeRates()
+    {
+        $exchange = json_decode(file_get_contents(env('EXCHANGE_URL')), true);
+        return $exchange['rates'];
+    }
+
+    /**
+     * check weekly transactions
+     */
+    public function isInWeek($tdate)
+    {
+        $transactionDate = \Carbon\Carbon::parse($this->date);
+        $wDate = \Carbon\Carbon::parse($tdate);
+
+        return $transactionDate->gte($wDate) && $wDate->weekOfYear == $transactionDate->weekOfYear && $wDate->diff($transactionDate)->days <= 7;
+    }
+
     /**
      * set data
      * @param array $data <mixed>
      *
      * @return static
      */
-    public function setData(array $data): BaseTransaction
+    public function setData(array $data, array $transactions): BaseTransaction
     {
         $this->amount = $data['operation_amount'] ?? 0;
         $this->currency = $data['operation_currency'] ?? self::DEFAULT_CURRENCY;
         $this->userId = $data['user_id'] ?? null;
         $this->userType = $data['user_type'] ?? null;
         $this->date = $data['date'] ?? now();
+        $this->weeklyWithdraws = [];
+
+        $count = 0;
+        foreach ($transactions as $t) {
+            if ($t['user_id'] == $this->userId && $t['user_type'] == self::USER_TYPE_PRIVATE && $t['operation_type'] == self::OPERATION_TYPE_WITHDRAW
+                && $this->isInWeek($t['date']) && $count < 3
+            ) {
+                $this->weeklyWithdraws []= $t;
+                $count ++;
+            }
+        }
 
         return $this;
     }
@@ -75,15 +118,6 @@ abstract class BaseTransaction
      * calculates a commission fee based on defined rules
      */
     abstract protected function calculateCommission(): float;
-
-    /**
-     * rule for operation type
-     * @param float $amount
-     * @param float $percent
-     *
-     * @return float
-     */
-    abstract protected function rule(float $amount, float $percent): float;
 
     /**
      * get calculated commission

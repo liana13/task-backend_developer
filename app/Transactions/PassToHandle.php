@@ -12,8 +12,8 @@ trait PassToHandle
      * @return float
      * @throws BindingResolutionException
      */
-    private function passToHandle(string $operationType, array $data): float
+    private function passToHandle(string $operationType, array $data, array $transactions): float
     {
-        return BaseTransaction::getInstance($operationType)->setData($data)->getCommission();
+        return BaseTransaction::getInstance($operationType)->setData($data, $transactions)->getCommission();
     }
 }

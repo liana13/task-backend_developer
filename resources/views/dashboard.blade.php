@@ -22,16 +22,27 @@
 </header>
 <main id="content" role="main">
     <div class="container">
-        <form enctype="multipart/form-data" action="{{route('import')}}" method="post">
-            @csrf
-            <div class="mb-3">
-                <label for="formFile" class="form-label">Import file</label>
-                <input class="form-control border border-primary" name="import" type="file" id="formFile">
+        <div class="row">
+            <div class="col-md-6 mx-auto">
+                <form enctype="multipart/form-data" action="{{route('import')}}" method="post">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="formFile" class="form-label">Import file</label>
+                        <input class="form-control border border-primary" name="import" type="file" id="formFile">
+                    </div>
+                    <button type="submit" class="btn btn-primary"
+                    >Apply
+                    </button>
+                </form>
+                @if (session()->has('commissions'))
+                    <div class="card mt-3 p-2">
+                        @foreach (session()->get('commissions') as $c)
+                            <p class="mb-1">{{ $c }}</p>
+                        @endforeach
+                    </div>
+                @endif
             </div>
-            <button type="submit" class="btn btn-primary"
-            >Apply
-            </button>
-        </form>
+        </div>
     </div>
 </main>
 <footer class="bd-footer text-muted">

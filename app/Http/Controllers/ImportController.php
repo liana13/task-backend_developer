@@ -24,9 +24,12 @@ class ImportController extends Controller
     {
         $commissions = [];
         $data = $import->toArray($request->validated()['import'], env('FILESYSTEM_DRIVER', 'local'), Excel::CSV);
-        foreach ($data[0] as $record) {
-            $commissions += $this->passToHandle($record['operation_type'], $record);
+        foreach ($data[0] as $key => $record) {
+            $transactions = $data[0];
+            unset($transactions[$key]);
+            $c = $this->passToHandle($record['operation_type'], $record, $transactions);
+            $commissions []= number_format($c,2) . ' ' . $record['operation_currency'];
         }
-        return redirect()->route('dashboard')->with('status', 'File was imported');
+        return redirect()->route('dashboard')->with('commissions', $commissions);
     }
 }
